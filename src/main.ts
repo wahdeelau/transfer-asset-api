@@ -14,8 +14,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const options = new DocumentBuilder()
-    .setTitle('DPMS Blockchain Interface API (POC)')
-    .setDescription('API for blockchain interaction (POC)')
+    .setTitle('Transfer Asset API (POC)')
+    .setDescription('Transfer Asset API for Terra and EVM (POC)')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
