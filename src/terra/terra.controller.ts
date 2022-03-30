@@ -28,8 +28,8 @@ export class TerraController {
     @Get('/get-address')
     @ApiOperation({ summary: 'Get Luna', description: 'Get Luna' })
     @ApiResponse({ status: 403, description: 'Forbidden.' })
-    @ApiQuery({name: 'br_num'})    
-    async getAddr( ) {
+    //@ApiQuery({name: 'br_num'})    
+    async getAddr( ) : Promise<string>{
       try{        
         return this.objWallet.getAddress();
       }
