@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post,Query,Req } from '@nestjs/common';
+import { LCDClient, MsgSend, MnemonicKey, RawKey,Wallet, Coins  } from '@terra-money/terra.js';
 import {TerraService} from './terra.service';
 import {TerraWallet} from '../Utils/wallet-util';
 import {
@@ -15,7 +16,7 @@ import {SimpleResp} from '../entities/simp_resp.entity'
 
 
 @ApiBearerAuth()
-@ApiTags('terrra')
+@ApiTags('terra')
 @Controller('terra')
 export class TerraController {
     private readonly logger = new Logger(TerraController.name);
@@ -26,11 +27,12 @@ export class TerraController {
 
 
     @Get('/get-address')
-    @ApiOperation({ summary: 'Get Luna', description: 'Get Luna' })
+    @ApiOperation({ summary: 'Get Address', description: 'Get Address' })
     @ApiResponse({ status: 403, description: 'Forbidden.' })
     //@ApiQuery({name: 'br_num'})    
     async getAddr( ) : Promise<string>{
       try{        
+        Logger.debug("Inside getAddress Controller");
         return this.objWallet.getAddress();
       }
       catch (err)
@@ -40,17 +42,20 @@ export class TerraController {
     }
 
     @Get('/get-balance')
-    @ApiOperation({ summary: 'Get Luna', description: 'Get Luna' })
+    @ApiOperation({ summary: 'Get Luna Balance', description: 'Get Luna Balance' })
     @ApiResponse({ status: 403, description: 'Forbidden.' })
-    @ApiQuery({name: 'br_num'})    
-    async getBalance( ) {
+    //@ApiQuery({name: 'br_num'})    
+    async getBalance( ) : Promise<Coins>{
       try{        
-        /*                                 
+        Logger.debug("Inside getBalance Controller");
+        /*      
+                                   
         let objWalletInfo : WalletInfoDto= await BesuHelper.createWallet(String(br_num) + " " + DPMSHelper.secretSalt);
         console.log(objWalletInfo);
         let objApplDtl : DealerApplDtl = await this.terraService.getApplDtl(objWalletInfo);
         return objApplDtl
         */
+        return this.objWallet.getNativeBalance();
       }
       catch (err)
       {

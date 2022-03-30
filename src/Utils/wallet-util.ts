@@ -28,6 +28,7 @@ type ExportedTerraStationWallet = {
 
     constructor()
     {
+      /*
       let strExKey :string = "eyJuYW1lIjoiZHJhZnNvbG5fdGVzdCIsImFkZHJlc3MiOiJ0ZXJyYTEycGNhazB0ZzA1NDU2ZWZxd2h5OGUzYzZzaHJweDAwcDR5ZXdnMCIsImVuY3J5cHRlZF9rZXkiOiIzMjNiMGFhNzlkY2FkOTgxOGRlMWFkNGUzZDQ2MWU0NTY2MWYyZDVlNDE2Mjk2OTA1MjZiYTM1OTg5ZGU1YzMxaEhkMlo4VDFjK0tqTTQvSEZ3MlJoNkhTUnlaamJ3Y0d5RENZRHMvdENlck9vaTEzN2Z4SXN6azJndzNabWlTRFVZa3NrUFY2NmhIQ3Q5STV2WG9vR0hpWjhrTDZNZUtmblU3WlorVWlCMFU9In0="
       let strKey : ExportedTerraStationWallet = JSON.parse(Buffer.from(
         strExKey,
@@ -36,11 +37,11 @@ type ExportedTerraStationWallet = {
 
       let strDecryptKey : string = decrypt(strKey.encrypted_key, this.strPassword);
       this.strRawKey  = new RawKey(Buffer.from(strDecryptKey, "hex"));
-      /*
+*/
       this.strRawKey = new MnemonicKey({
         mnemonic: "satisfy adjust timber high purchase tuition stool faith fine install that you unaware feed domain license impose boss human eager hat rent enjoy dawn",
       });
-      */
+
     
       this.objTerraConn  = new LCDClient({
         URL: 'http://localhost:1317',
@@ -57,7 +58,7 @@ type ExportedTerraStationWallet = {
 
     async getNativeBalance() : Promise<Coins>
     {
-      Logger.log("inside get native balance")
+      Logger.debug("inside get native balance")
       let objBal : Coins;
       let objPage : Pagination;
       [objBal, objPage] = await this.objTerraConn.bank.balance(this.objWallet.key.accAddress);
