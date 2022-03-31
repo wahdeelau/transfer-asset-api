@@ -1,9 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  Account,TransactionReceipt,HttpProvider,Transaction
-  } from 'web3-core';
-import Web3 from "web3";
-import {DealerChainDto} from '../dto/dealer-chain.dto';
 
 export class SimpleResp {
 

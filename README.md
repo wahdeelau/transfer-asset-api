@@ -8,8 +8,7 @@
 
 
 ## Assumptions
-1) Source wallet have 0 luna but have other TerraSDR asset (code does not do any null pointer checking)
-2) EVM and Terra ecosystem share same mnemonic phrase
+1) EVM and Terra ecosystem share same mnemonic phrase
 
 ## Configuration
 
@@ -18,7 +17,12 @@ For Port Change
 export PORT=XXXXXX
 ```
 
-Change Mnenomic Phrase at wallet-utils.ts
+Update wallet-utils.ts
+```
+At initWallet()
+1) Update Mnemonic Phrase
+2) Set the Correct LCD Endpoints
+```
 
 
 ## Run Server
@@ -26,3 +30,5 @@ Change Mnenomic Phrase at wallet-utils.ts
 yarn
 yarn start:debug
 ```
+
+For delegated Luna retrieval, run the /terra/activate-poll endpoint
