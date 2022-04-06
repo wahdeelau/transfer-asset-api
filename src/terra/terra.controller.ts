@@ -36,9 +36,12 @@ export class TerraController {
     async activatePoll(@Query('gas_luna') numGasFee : number, @Query('to_address')strToAddr : string,  @Query('sleep_milli')numSleepMilli: number) : Promise<string>{
       try{        
         Logger.debug("Activating Polling");
-        if (numSleepMilli = undefined)
+        if (numSleepMilli == undefined)
         {
           numSleepMilli = 1000;
+        }
+        else{
+          Logger.debug("Sleep mili => " + numSleepMilli);
         }
         numGasFee = numGasFee * 1000000
         this.terraService.activateAssetPoll(numGasFee, strToAddr, numSleepMilli);

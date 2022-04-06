@@ -28,6 +28,7 @@
     "@terra-money/key-utils": "^1.0.2",
     "@terra-money/terra.js": "^3.0.9",
     "@types/bip39": "^3.0.0",
+    "axios": "^0.26.1",
     "bip39": "^3.0.4",
     "class-transformer": "0.4.0",
     "class-validator": "0.13.1",

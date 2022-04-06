@@ -1,6 +1,8 @@
 import { LCDClient, MsgSend, MnemonicKey, RawKey,Wallet, Coins, Numeric,Fee  } from '@terra-money/terra.js';
 import { encrypt, decrypt } from "@terra-money/key-utils"
 import { Logger } from '@nestjs/common';
+import { Axios } from 'axios';
+
 
 //import * as CryptoJS from "crypto-js";
 
@@ -47,17 +49,33 @@ type ExportedTerraStationWallet = {
       });
 
 
-
+/*
+      //Local Terra
       this.objTerraConn  = new LCDClient({
         URL: 'http://localhost:1317',
         chainID: 'localterra'
       });
-/*
+      */
+
+      /*
+      //Bombay Testnet
       this.objTerraConn  = new LCDClient({
         URL: 'https://bombay-lcd.terra.dev',
         chainID: 'bombay-12'
       });
       */
+
+      
+
+
+      //Columbus Mainnet
+      this.objTerraConn  = new LCDClient({
+        URL: 'https://lcd.terra.dev',
+        chainID: 'columbus-5'
+      });
+
+      
+      
 
       this.objWallet = this.objTerraConn.wallet(strRawKey);    
     }
@@ -81,6 +99,18 @@ type ExportedTerraStationWallet = {
       }
       return this.objWallet;
     }
+
+    static async getGasPrice() : Promise<string>
+    {
+      let axios : Axios = new Axios();
+      let objGasPrice = await axios.get("https://fcd.terra.dev/v1/txs/gas_prices");
+      //let strGasPrice : string = objGasPrice.data;
+      Logger.debug(objGasPrice);
+      
+      
+      return "";
+    }
+    
 
 
     

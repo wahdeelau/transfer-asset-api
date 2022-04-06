@@ -17,7 +17,8 @@ export class TerraService {
   private objWallet : Wallet  = null;
   private objTerraConn : LCDClient = null;
   private blnPolling : boolean = false;
-  private intSleepTimeMilli : number = 1000;
+  private intSleepTimeMilli : number = 0;
+  private intSequence : number = null;
   //private numGasFee : number = 0.1 * 1000000;
 
   constructor()
@@ -34,12 +35,20 @@ export class TerraService {
     {
       let objCoins : Coins = await this.getNativeBalance();
       let objLuna : Coin = objCoins.get("uluna");
-      
+      Logger.debug("getting Luna Balance  => " + objLuna);
+      let intSequence = await this.objWallet.sequence();
+        Logger.debug("sequence => " + intSequence);
       if (objLuna != undefined)
       {
         let numAmt : number = objLuna.amount.toNumber();
         Logger.debug("Initiate uLuna Transfer of  => " + numAmt);
-        await this.transferAllLunaFixed(numGasFee, strToAddr);
+        
+        if (true)
+        {
+          this.intSequence = intSequence;
+          await this.transferAllLunaFixed(numGasFee, strToAddr);
+        }
+        
       }
       await sleepMilliSec(this.intSleepTimeMilli);
     }
@@ -75,25 +84,52 @@ export class TerraService {
   {
     let objBal : Coins;
     let objPage : Pagination;
+    let strPrincipalAmt = "Balance is Zero";
     [objBal, objPage] = await this.objTerraConn.bank.balance(this.objWallet.key.accAddress);
-    let objAmt : Numeric.Output = objBal.get("uluna").amount;
-    Logger.debug("objAmt.toNumber() ==> " + objAmt.toNumber());
-    objAmt = objAmt.sub(intAmt);
-    let strPrincipalAmt = objAmt.toString();
-    Logger.debug("strPrincipal ==> " + strPrincipalAmt);
-
-    const msgSend = new MsgSend(
-      this.objWallet.key.accAddress,
-      strToAddr,
-      { uluna: strPrincipalAmt }
-    );
+    Logger.debug(objBal);
+    if (objBal.get("uluna") != undefined)
+    {
+      let objAmt : Numeric.Output = objBal.get("uluna").amount;
+      Logger.debug("objAmt.toNumber() ==> " + objAmt.toNumber());
+      objAmt = objAmt.sub(intAmt);
+      strPrincipalAmt = objAmt.toString();
+      Logger.debug("strPrincipal ==> " + strPrincipalAmt);
+  
+      const msgSend = new MsgSend(
+        this.objWallet.key.accAddress,
+        strToAddr,
+        { uluna: strPrincipalAmt }
+      );
+      
+      let objFee = new Fee(106000,{ uluna: intAmt });
+      let gasprices = {"uluna":intAmt};
+  
+      //Logger.debug("sequence before => " + await this.objWallet.sequence());
+      let objTx = await this.objWallet.createAndSignTx({ msgs: [msgSend],fee: objFee});
+      //Logger.debug("sequence before broadcast => " + await this.objWallet.sequence());
+      let result = await this.objTerraConn.tx.broadcastSync(objTx);
+      await this.adhocWaitSequence( await this.objWallet.sequence());
+      //Logger.debug("sequence after => " + await this.objWallet.sequence());
+      
+      Logger.debug(result);
+    }
     
-    let objFee = new Fee(intAmt, { uluna: intAmt });
-    let objTx = await this.objWallet.createAndSignTx({ msgs: [msgSend], fee: objFee});
-    
-    let result = await this.objTerraConn.tx.broadcast(objTx);
-    Logger.debug(result);
     return strPrincipalAmt;
+  }
+
+  async adhocWaitSequence(intSequence : number)
+  {
+    //for (let i = 0; i < 9999999; i++)
+    while(true)
+    {
+      Logger.debug("waiting for sequence change");
+      if (await this.objWallet.sequence() == intSequence + 1)
+      {
+        return;
+      }
+    }
+    
+
   }
 
 
@@ -126,7 +162,6 @@ export class TerraService {
     Logger.debug(result);
     return strPrincipalAmt;
   }
-  
 
 
 
