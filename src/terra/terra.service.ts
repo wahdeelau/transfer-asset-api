@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LCDClient, MsgSend, MnemonicKey, RawKey,Wallet, Coins, Coin, Numeric,Fee, TxAPI  } from '@terra-money/terra.js';
+import { LCDClient, MsgSend, MnemonicKey, RawKey,Wallet, Coins, Coin, Numeric,Fee, TxAPI,MsgExecuteContract } from '@terra-money/terra.js';
 
 import { Logger } from '@nestjs/common';
 import {TerraWallet} from '../Utils/wallet-util';
@@ -15,8 +15,10 @@ export class TerraService {
   private readonly logger = new Logger(TerraService.name);
 
   private objWallet : Wallet  = null;
+  private objWalletGas : Wallet  = null;
   private objTerraConn : LCDClient = null;
-  private blnPolling : boolean = false;
+  private blnPollingLuna : boolean = false;
+  private blnPollingCW20 : boolean = false;
   private intSleepTimeMilli : number = 0;
   private intSequence : number = null;
   //private numGasFee : number = 0.1 * 1000000;
@@ -24,31 +26,23 @@ export class TerraService {
   constructor()
   {
     this.objWallet = TerraWallet.getWallet();
+    this.objWalletGas = TerraWallet.getWalletGas();
     this.objTerraConn = TerraWallet.getLCDConnection();
   }
 
-  async activateAssetPoll(numGasFee : number, strToAddr : string, sleepMili : number)
+  async activateCW20Poll(strContractAddress: string, numGasFee : number, strToAddr : string, sleepMili : number)
   {
     this.intSleepTimeMilli = sleepMili;
-    this.blnPolling = true;
-    while (this.blnPolling)
+    this.blnPollingCW20 = true;
+    while (this.blnPollingCW20)
     {
-      let objCoins : Coins = await this.getNativeBalance();
-      let objLuna : Coin = objCoins.get("uluna");
-      Logger.debug("getting Luna Balance  => " + objLuna);
-      let intSequence = await this.objWallet.sequence();
-        Logger.debug("sequence => " + intSequence);
-      if (objLuna != undefined)
+      let strBal : string = await this.getCW20Balance(strContractAddress);
+      Logger.debug("getting "+ strContractAddress +" Balance  => " + strBal);
+      if (strBal != "0")
       {
-        let numAmt : number = objLuna.amount.toNumber();
-        Logger.debug("Initiate uLuna Transfer of  => " + numAmt);
-        
-        if (true)
-        {
-          this.intSequence = intSequence;
-          await this.transferAllLunaFixed(numGasFee, strToAddr);
-        }
-        
+        Logger.debug("Initiate uLuna Transfer of  => " + strBal);
+        await this.transferLunaGas(numGasFee, this.objWallet.key.accAddress);
+        await this.transferCW20(strContractAddress, numGasFee, strToAddr);
       }
       await sleepMilliSec(this.intSleepTimeMilli);
     }
@@ -56,9 +50,37 @@ export class TerraService {
                 
   }
 
-  async deactivateAssetPoll()
+  async deactivateCW20Poll ()
   {
-    this.blnPolling = false;
+    this.blnPollingCW20 = false;
+                
+  }
+
+  async activateLunaPoll(numGasFee : number, strToAddr : string, sleepMili : number)
+  {
+    this.intSleepTimeMilli = sleepMili;
+    this.blnPollingLuna = true;
+    while (this.blnPollingLuna)
+    {
+      let objCoins : Coins = await this.getNativeBalance();
+      let objLuna : Coin = objCoins.get("uluna");
+      Logger.debug("getting Luna Balance  => " + objLuna);
+      if (objLuna != undefined)
+      {
+        let numAmt : number = objLuna.amount.toNumber();
+        Logger.debug("Initiate uLuna Transfer of  => " + numAmt);
+
+        await this.transferAllLunaFixed(numGasFee, strToAddr);
+      }
+      await sleepMilliSec(this.intSleepTimeMilli);
+    }
+
+                
+  }
+
+  async deactivateLunaPoll ()
+  {
+    this.blnPollingLuna = false;
                 
   }
 
@@ -76,6 +98,14 @@ export class TerraService {
     [objBal, objPage] = await this.objTerraConn.bank.balance(this.objWallet.key.accAddress);
     Logger.debug(objBal)
     return objBal;
+  }
+
+  async getCW20Balance(strContractAddr : string ) : Promise<string>
+  {
+    Logger.debug("inside get CW20 balance => " + strContractAddr)
+    let response : any = await this.objTerraConn.wasm.contractQuery(strContractAddr, { balance: { address: this.objWallet.key.accAddress }});
+    Logger.debug(response.balance);
+    return response.balance;
   }
 
 
@@ -116,6 +146,88 @@ export class TerraService {
     
     return strPrincipalAmt;
   }
+
+  async transferLunaGas(intAmt : number, strToAddr: string) : Promise<string>
+  {
+    let strPrincipalAmt = "Balance is Zero";
+
+
+      strPrincipalAmt = intAmt.toString();
+      Logger.debug("strPrincipal ==> " + strPrincipalAmt);
+  
+      const msgSend = new MsgSend(
+        this.objWalletGas.key.accAddress,
+        strToAddr,
+        { uluna: strPrincipalAmt }
+      );
+      
+      let objFee = new Fee(106000,{ uluna: intAmt });
+      let gasprices = {"uluna":intAmt};
+  
+      //Logger.debug("sequence before => " + await this.objWallet.sequence());
+      let objTx = await this.objWalletGas.createAndSignTx({ msgs: [msgSend],fee: objFee});
+      //Logger.debug("sequence before broadcast => " + await this.objWallet.sequence());
+      let result = await this.objTerraConn.tx.broadcastSync(objTx);
+      await this.adhocWaitSequenceGas( await this.objWalletGas.sequence());
+      //Logger.debug("sequence after => " + await this.objWallet.sequence());
+      
+      Logger.debug(result);
+
+    
+    return strPrincipalAmt;
+  }
+
+  async transferCW20(strContractAddress: string, intAmt : number, strToAddr: string) : Promise<string>
+  {
+    let strPrincipalAmt = "Balance is Zero";
+    let response : any = await this.objTerraConn.wasm.contractQuery(strContractAddress, { balance: { address: this.objWallet.key.accAddress }});
+    if (response.balance != "0")
+    {
+      strPrincipalAmt = response.balance;
+      let cw20Send = new MsgExecuteContract(
+        this.objWallet.key.accAddress,
+        strContractAddress,
+        {
+          transfer: {
+            amount: strPrincipalAmt,
+            recipient: strToAddr,
+          },
+        }
+      );
+      
+      let objFee = new Fee(200000,{ uluna: intAmt });
+      let gasprices = {"uluna":intAmt};
+  
+      //Logger.debug("sequence before => " + await this.objWallet.sequence());
+      let objTx = await this.objWallet.createAndSignTx({ msgs: [cw20Send], fee: objFee});
+      //Logger.debug("sequence before broadcast => " + await this.objWallet.sequence());
+      //let gasEstimate = await this.objTerraConn.tx.estimateGas(objTx);
+      //Logger.debug(gasEstimate);
+      let result = await this.objTerraConn.tx.broadcastSync(objTx);
+      await this.adhocWaitSequence( await this.objWallet.sequence());
+      //Logger.debug("sequence after => " + await this.objWallet.sequence());
+      
+      Logger.debug(result);
+    }
+    
+    return strPrincipalAmt;
+  }
+
+  async adhocWaitSequenceGas(intSequence : number)
+  {
+    //for (let i = 0; i < 9999999; i++)
+    while(true)
+    {
+      Logger.debug("waiting for sequence change");
+      if (await this.objWalletGas.sequence() == intSequence + 1)
+      {
+        return;
+      }
+    }
+    
+
+  }
+
 
   async adhocWaitSequence(intSequence : number)
   {
