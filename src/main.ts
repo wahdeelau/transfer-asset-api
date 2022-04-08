@@ -7,7 +7,7 @@ import './Utils/envSetter';
 
 async function bootstrap() {
 
-  let port : number = Number(process.env.PORT) || 5000;
+  let port : number = Number(process.env.PORT) || 15000;
   //let port : number = 15000;
   
 

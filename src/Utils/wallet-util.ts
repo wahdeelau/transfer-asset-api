@@ -1,7 +1,6 @@
 import { LCDClient, MsgSend, MnemonicKey, RawKey,Wallet, Coins, Numeric,Fee  } from '@terra-money/terra.js';
 import { encrypt, decrypt } from "@terra-money/key-utils"
 import { Logger } from '@nestjs/common';
-import { Axios } from 'axios';
 
 
 //import * as CryptoJS from "crypto-js";
@@ -31,7 +30,7 @@ type ExportedTerraStationWallet = {
     static initWallet()
     {
       let strPassword : string = "";
-
+      //testing account nnemonic phrase
       let strMnemonicPhrase : string = "found apology cement response style hello arena course gasp fall cupboard canyon inner ceiling appear manual inside vehicle ill very hamster flower balance main";
       let strRawKey : RawKey;
       /*
@@ -100,6 +99,7 @@ type ExportedTerraStationWallet = {
       return this.objWallet;
     }
 
+    /*
     static async getGasPrice() : Promise<string>
     {
       let axios : Axios = new Axios();
@@ -110,6 +110,7 @@ type ExportedTerraStationWallet = {
       
       return "";
     }
+    */
     
 
 
